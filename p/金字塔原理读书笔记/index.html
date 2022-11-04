@@ -1,24 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='MySQL服务器处理客户端请求 客户端进程向服务端进程发送一段文本（MySQL语句），服务器处理后再向客户端发送一段文本（数据结果）
-mysql服务端处理流程
- 连接管理  处理连接   解析与优化  查询缓存 语法解析 查询优化   存储引擎  MyISAM、InnoDB 文件系统    InnoDB记录存储结构 InnoDB将数据划分为若干个页，以页（1页16KB）作为磁盘和内存之间交互的基本单位。'><title>《MySQL是怎样运行的》笔记</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='金字塔原理  第1篇 表达的逻辑 第2篇 思考的逻辑 第3篇 解决问题的逻辑 第4篇 演示的逻辑  对受众（包括读者、听众、观众或学员）来说，最容易理解的顺序是：先了解主要的、抽象的思想，然后了解次要的、为主要思想提供支持的思想。'><title>《金字塔原理》读书笔记</title>
 
-<link rel='canonical' href='https://yunteng9345.github.io/p/mysql%E6%98%AF%E6%80%8E%E6%A0%B7%E8%BF%90%E8%A1%8C%E7%9A%84%E7%AC%94%E8%AE%B0/'>
+<link rel='canonical' href='https://yunteng9345.github.io/p/%E9%87%91%E5%AD%97%E5%A1%94%E5%8E%9F%E7%90%86%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/'>
 
-<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='《MySQL是怎样运行的》笔记'>
-<meta property='og:description' content='MySQL服务器处理客户端请求 客户端进程向服务端进程发送一段文本（MySQL语句），服务器处理后再向客户端发送一段文本（数据结果）
-mysql服务端处理流程
- 连接管理  处理连接   解析与优化  查询缓存 语法解析 查询优化   存储引擎  MyISAM、InnoDB 文件系统    InnoDB记录存储结构 InnoDB将数据划分为若干个页，以页（1页16KB）作为磁盘和内存之间交互的基本单位。'>
-<meta property='og:url' content='https://yunteng9345.github.io/p/mysql%E6%98%AF%E6%80%8E%E6%A0%B7%E8%BF%90%E8%A1%8C%E7%9A%84%E7%AC%94%E8%AE%B0/'>
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='《金字塔原理》读书笔记'>
+<meta property='og:description' content='金字塔原理  第1篇 表达的逻辑 第2篇 思考的逻辑 第3篇 解决问题的逻辑 第4篇 演示的逻辑  对受众（包括读者、听众、观众或学员）来说，最容易理解的顺序是：先了解主要的、抽象的思想，然后了解次要的、为主要思想提供支持的思想。'>
+<meta property='og:url' content='https://yunteng9345.github.io/p/%E9%87%91%E5%AD%97%E5%A1%94%E5%8E%9F%E7%90%86%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/'>
 <meta property='og:site_name' content='码艺术'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='mysql' /><meta property='article:published_time' content='2021-10-23T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2021-10-23T00:00:00&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='感悟' /><meta property='article:published_time' content='2022-11-04T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-11-04T00:00:00&#43;00:00'/>
 <meta name="twitter:site" content="@yunteng95">
-    <meta name="twitter:creator" content="@yunteng95"><meta name="twitter:title" content="《MySQL是怎样运行的》笔记">
-<meta name="twitter:description" content="MySQL服务器处理客户端请求 客户端进程向服务端进程发送一段文本（MySQL语句），服务器处理后再向客户端发送一段文本（数据结果）
-mysql服务端处理流程
- 连接管理  处理连接   解析与优化  查询缓存 语法解析 查询优化   存储引擎  MyISAM、InnoDB 文件系统    InnoDB记录存储结构 InnoDB将数据划分为若干个页，以页（1页16KB）作为磁盘和内存之间交互的基本单位。">
+    <meta name="twitter:creator" content="@yunteng95"><meta name="twitter:title" content="《金字塔原理》读书笔记">
+<meta name="twitter:description" content="金字塔原理  第1篇 表达的逻辑 第2篇 思考的逻辑 第3篇 解决问题的逻辑 第4篇 演示的逻辑  对受众（包括读者、听众、观众或学员）来说，最容易理解的顺序是：先了解主要的、抽象的思想，然后了解次要的、为主要思想提供支持的思想。">
     </head>
     <body class="
     article-page has-toc
@@ -72,15 +66,15 @@ mysql服务端处理流程
     
     <header class="article-category">
         
-            <a href="/categories/book/" >
-                book
+            <a href="/categories/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/" >
+                读书笔记
             </a>
         
     </header>
     
 
     <h2 class="article-title">
-        <a href="/p/mysql%E6%98%AF%E6%80%8E%E6%A0%B7%E8%BF%90%E8%A1%8C%E7%9A%84%E7%AC%94%E8%AE%B0/">《MySQL是怎样运行的》笔记</a>
+        <a href="/p/%E9%87%91%E5%AD%97%E5%A1%94%E5%8E%9F%E7%90%86%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/">《金字塔原理》读书笔记</a>
     </h2>
 
     
@@ -98,7 +92,7 @@ mysql服务端处理流程
   <path d="M3 11h16" />
   <path d="M18 16.496v1.504l1 1" />
 </svg>
-                <time class="article-time--published">Oct 23, 2021</time>
+                <time class="article-time--published">Nov 04, 2022</time>
             </div>
         
 
@@ -123,31 +117,14 @@ mysql服务端处理流程
 </header>
 
     <section class="article-content">
-    <h3 id="mysql服务器处理客户端请求">MySQL服务器处理客户端请求</h3>
-<p>客户端进程向服务端进程发送一段文本（MySQL语句），服务器处理后再向客户端发送一段文本（数据结果）</p>
-<p>mysql服务端处理流程</p>
+    <h2 id="金字塔原理">金字塔原理</h2>
 <ol>
-<li>连接管理
-<ol>
-<li>处理连接</li>
+<li>第1篇 表达的逻辑</li>
+<li>第2篇 思考的逻辑</li>
+<li>第3篇 解决问题的逻辑</li>
+<li>第4篇 演示的逻辑</li>
 </ol>
-</li>
-<li>解析与优化
-<ol>
-<li>查询缓存</li>
-<li>语法解析</li>
-<li>查询优化</li>
-</ol>
-</li>
-<li>存储引擎
-<ol>
-<li>MyISAM、InnoDB</li>
-<li>文件系统</li>
-</ol>
-</li>
-</ol>
-<h3 id="innodb记录存储结构">InnoDB记录存储结构</h3>
-<p>InnoDB将数据划分为<strong>若干个页</strong>，以页（1页16KB）作为磁盘和内存之间交互的基本单位。</p>
+<p>对受众（包括读者、听众、观众或学员）来说，最容易理解的顺序是：先了解主要的、抽象的思想，然后了解次要的、为主要思想提供支持的思想。</p>
 
 </section>
 
@@ -156,7 +133,7 @@ mysql服务端处理流程
     
     <section class="article-tags">
         
-            <a href="/tags/mysql/">mysql</a>
+            <a href="/tags/%E6%84%9F%E6%82%9F/">感悟</a>
         
     </section>
 
@@ -189,49 +166,6 @@ mysql服务端处理流程
 
     <aside class="related-contents--wrapper">
     
-    
-        <h2 class="section-title">相关文章</h2>
-        <div class="related-contents">
-            <div class="flex article-list--tile">
-                
-                    
-<article class="">
-    <a href="/p/%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95%E7%9A%84%E8%89%BA%E6%9C%AF%E7%AC%94%E8%AE%B0/">
-        
-        
-
-        <div class="article-details">
-            <h2 class="article-title">《单元测试的艺术》笔记</h2>
-        </div>
-    </a>
-</article>
-                
-                    
-<article class="">
-    <a href="/p/%E9%87%8D%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%89%88%E7%AC%94%E8%AE%B0/">
-        
-        
-
-        <div class="article-details">
-            <h2 class="article-title">《重构第二版》笔记</h2>
-        </div>
-    </a>
-</article>
-                
-                    
-<article class="">
-    <a href="/p/%E9%87%8D%E6%9E%84%E7%AC%AC%E4%BA%8C%E7%89%88%E7%AC%94%E8%AE%B0/">
-        
-        
-
-        <div class="article-details">
-            <h2 class="article-title">《重构第二版》笔记</h2>
-        </div>
-    </a>
-</article>
-                
-            </div>
-        </div>
     
 </aside>
 
@@ -402,12 +336,7 @@ mysql服务端处理流程
                 <div class="widget--toc">
                     <nav id="TableOfContents">
   <ol>
-    <li>
-      <ol>
-        <li><a href="#mysql服务器处理客户端请求">MySQL服务器处理客户端请求</a></li>
-        <li><a href="#innodb记录存储结构">InnoDB记录存储结构</a></li>
-      </ol>
-    </li>
+    <li><a href="#金字塔原理">金字塔原理</a></li>
   </ol>
 </nav>
                 </div>
